@@ -10,5 +10,6 @@
     
     // used to work with older libraries which use commonjs exports in an easier way
     "esModuleInterop": true
-  }
+  },
+  "include": ["src/**/*"]
 }
