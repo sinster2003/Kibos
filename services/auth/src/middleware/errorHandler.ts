@@ -1,12 +1,21 @@
 import { ErrorRequestHandler } from "express";
+import CustomError from "../utils/customError.js";
 
 const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
     if(error.name === "CastError") {
-        return res.status(400).json({ message: "Malformed Id" });
+        return res.status(400).json({
+            message: "Invalid ID format"
+        });
     }
 
-    res.status(500).json({
-        message: "Something went wrong"
+    if(error instanceof CustomError) {
+        return res.status(error.statusCode).json({
+            message: error.message
+        });
+    }
+
+    return res.status(500).json({
+        message: "Internal server error"
     });
 }
 
