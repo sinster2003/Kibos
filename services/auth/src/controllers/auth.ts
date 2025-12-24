@@ -3,7 +3,7 @@ import catchAsync from "../utils/catchAsync.js";
 import CustomError from "../utils/customError.js";
 import { ControllerType } from "../utils/types.js";
 import { registerUserSchema } from "./auth.schema.js";
-import { createUser, existingUser } from "../db/queries/users.js";
+import { createUser, findExistingUserByEmail } from "../db/queries/users.js";
 import bcrypt from "bcrypt";
 
 const registerUser: ControllerType = async (req, res) => {
@@ -15,12 +15,12 @@ const registerUser: ControllerType = async (req, res) => {
         throw new CustomError(400, prettifyError(error));
     }
 
-    const { email, password, role } = data;
+    const { email, password } = data;
 
-    const isUserExisting = await existingUser(email);
+    const isUserExisting = await findExistingUserByEmail(email);
 
     if(isUserExisting) {
-        throw new CustomError(409, "User with this email already exists. Please log in");
+        throw new CustomError(409, "User with this email already exists. Please log in.");
     }
 
     const saltRounds = await bcrypt.genSalt(10);
@@ -28,19 +28,10 @@ const registerUser: ControllerType = async (req, res) => {
 
     let registeredUser = null;
 
-    if(role === "recruiter") {
-        registeredUser = await createUser({ ...data, password: hashedPassword });
+    registeredUser = await createUser({ ...data, password: hashedPassword });
 
-        if(!registeredUser) {
-            throw new CustomError(500, "Registration failed due to server issue");
-        }
-    }
-    else if(role === "jobseeker") {
-        registeredUser = await createUser({ ...data, password: hashedPassword });
-
-        if(!registeredUser) {
-            throw new CustomError(500, "Registration failed due to server issue");
-        }
+    if(!registeredUser) {
+        throw new CustomError(500, "User registration failed.");
     }
 
     res.status(200).json({
