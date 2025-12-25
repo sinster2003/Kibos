@@ -15,6 +15,13 @@
       "when": 1766158224601,
       "tag": "0001_lucky_wind_dancer",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1766672451900,
+      "tag": "0002_flashy_black_knight",
+      "breakpoints": true
     }
   ]
 }

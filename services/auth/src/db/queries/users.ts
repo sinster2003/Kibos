@@ -6,7 +6,7 @@ import pool from "../client.js"
 export const findExistingUserByEmail = async (email: string): Promise<boolean> => {
     try {
         const { rowCount } = await pool.query(
-            `SELECT 1 FROM users WHERE email=$1`,
+            `SELECT 1 FROM auth_users WHERE email=$1`,
             [email]
         );
 
@@ -18,13 +18,13 @@ export const findExistingUserByEmail = async (email: string): Promise<boolean> =
     }
 }
 
-export const createUser = async ({ name, email, password, phoneNo, role }: NewUser): Promise<Omit<User, "password"> | null> => {
+export const createUser = async ({ userId, name, email, password, role }: NewUser): Promise<Omit<User, "password"> | null> => {
     try {
         const { rows } = await pool.query(
-            `INSERT INTO users (name, email, password, phone_no, role) 
+            `INSERT INTO auth_users (user_id, name, email, password, role) 
             VALUES ($1, $2, $3, $4, $5) RETURNING
-            user_id, name, email, phone_no, role, created_at`,
-            [name, email, password, phoneNo, role]
+            user_id, name, email, role, created_at`,
+            [userId, name, email, password, role]
         );
         
         return rows[0] ?? null;
@@ -33,10 +33,12 @@ export const createUser = async ({ name, email, password, phoneNo, role }: NewUs
         console.log(error);
 
         if(error instanceof DatabaseError) {
+            // unique constraint violation error code
             if(error.code === "23505") {
-                throw new CustomError(409, "A user with the provided email or phone number already exists.");
+                throw new CustomError(409, "A user with the provided email already exists.");
             }
-
+            
+            // not null and check constraint error code
             if(error.code === "23502" || error.code === "23514") {
                 throw new CustomError(400, "Invalid user data. Please verify all required fields.");
             }

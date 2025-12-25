@@ -5,6 +5,7 @@ import { ControllerType } from "../utils/types.js";
 import { registerUserSchema } from "./auth.schema.js";
 import { createUser, findExistingUserByEmail } from "../db/queries/users.js";
 import bcrypt from "bcrypt";
+import { v4 as uuidv4 } from "uuid";
 
 const registerUser: ControllerType = async (req, res) => {
     const userDetails = req.body;
@@ -26,9 +27,7 @@ const registerUser: ControllerType = async (req, res) => {
     const saltRounds = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    let registeredUser = null;
-
-    registeredUser = await createUser({ ...data, password: hashedPassword });
+    const registeredUser = await createUser({ ...data, userId: uuidv4(), password: hashedPassword });
 
     if(!registeredUser) {
         throw new CustomError(500, "User registration failed.");
