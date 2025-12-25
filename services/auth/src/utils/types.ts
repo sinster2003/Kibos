@@ -8,8 +8,14 @@ type User = InferSelectModel<typeof users>;
 
 type NewUser = InferInsertModel<typeof users>;
 
+interface JwtPayload {
+    sub: string;
+    role: string;
+}
+
 export {
     ControllerType,
     User,
-    NewUser
+    NewUser,
+    JwtPayload
 }

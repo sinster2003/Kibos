@@ -6,6 +6,8 @@ import { registerUserSchema } from "./auth.schema.js";
 import { createUser, findExistingUserByEmail } from "../db/queries/users.js";
 import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
+import { NODE_ENV } from "../config/index.js";
+import generateJwt from "../utils/generateJWT.js";
 
 const registerUser: ControllerType = async (req, res) => {
     const userDetails = req.body;
@@ -32,6 +34,16 @@ const registerUser: ControllerType = async (req, res) => {
     if(!registeredUser) {
         throw new CustomError(500, "User registration failed.");
     }
+
+    // generating token
+    const token = generateJwt({ sub: registeredUser.userId, role: registeredUser.role });
+
+    res.cookie("access_token", token, {
+        httpOnly: true,
+        sameSite: "strict",
+        secure: NODE_ENV === "production",
+        maxAge: 15 * 60 * 1000
+    });
 
     res.status(200).json({
         message: `${registeredUser?.name} registered successfully`,
