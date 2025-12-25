@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { InferInsertModel, InferSelectModel } from "drizzle-orm";
-import { users } from "../db/schema.js";
+import { auth_users as users } from "../db/schema.js";
 
 type ControllerType = (req: Request, res: Response, next: NextFunction) => Promise<any>;
 
