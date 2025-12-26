@@ -8,6 +8,8 @@ import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
 import { NODE_ENV } from "../config/index.js";
 import generateJwt from "../utils/generateJWT.js";
+import { randomBytes, createHash } from "crypto";
+import { storeRefreshToken } from "../db/queries/tokens.js";
 
 const registerUser: ControllerType = async (req, res) => {
     const userDetails = req.body;
@@ -36,13 +38,37 @@ const registerUser: ControllerType = async (req, res) => {
     }
 
     // generating token
-    const token = generateJwt({ sub: registeredUser.userId, role: registeredUser.role });
+    const token = generateJwt({ sub: registeredUser.user_id, role: registeredUser.role });
+
+    // generating refresh token and store in DB
+    const refreshToken = randomBytes(64).toString("hex");
+    
+    const tokenHash = createHash("sha256").update(refreshToken).digest("hex");
+
+    const createdRefreshToken = await storeRefreshToken({
+        id: uuidv4(),
+        userId: registeredUser.user_id,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    });
+
+    if(!createdRefreshToken) {
+        throw new CustomError(500, "Refresh token creation failed.");
+    }
 
     res.cookie("access_token", token, {
         httpOnly: true,
-        sameSite: "strict",
+        sameSite: "lax",
         secure: NODE_ENV === "production",
         maxAge: 15 * 60 * 1000
+    });
+
+    res.cookie("refresh_token", refreshToken, {
+        httpOnly: true,
+        secure: NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/api/auth", // the refresh token must be sent only to auth service
+        maxAge: 30 * 24 * 60 * 60 * 1000
     });
 
     res.status(200).json({
