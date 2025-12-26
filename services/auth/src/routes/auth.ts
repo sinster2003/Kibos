@@ -3,8 +3,9 @@ import authControllers from "../controllers/auth.js";
 
 const authRouter = Router();
 
-const { registerUser } = authControllers;
+const { registerUser, loginUser } = authControllers;
 
 authRouter.post("/register", registerUser);
+authRouter.post("/login", loginUser);
 
 export default authRouter;

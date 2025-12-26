@@ -8,3 +8,8 @@ export const registerUserSchema = zod.object({
     role: zod.enum(["jobseeker", "recruiter"])
 })
 .required();
+
+export const loginUserSchema = zod.object({
+    email: zod.email(),
+    password: zod.string().min(6, "Password must be at least 6 characters long")
+}).required();

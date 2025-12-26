@@ -5,8 +5,6 @@ import CustomError from "../../utils/customError.js";
 
 export const storeRefreshToken = async ({ id, userId, tokenHash, expiresAt }: RefreshToken) => {
     try {
-        console.log(id, userId, tokenHash, expiresAt);
-        
         const { rows } = await pool.query(`
            INSERT INTO refresh_tokens (id, user_id, token, expires_at)
            VALUES ($1, $2, $3, $4) RETURNING

@@ -20,10 +20,15 @@ interface ExistingUser extends Omit<User, "userId" | "createdAt" | "password"> {
     created_at: Date;
 }
 
+interface UserWithPassword extends ExistingUser {
+    password: string;
+}
+
 export {
     ControllerType,
     NewUser,
     JwtPayload,
     RefreshToken,
-    ExistingUser
+    ExistingUser,
+    UserWithPassword
 }

@@ -1,9 +1,9 @@
 import { DatabaseError } from "pg";
 import CustomError from "../../utils/customError.js";
-import { NewUser, ExistingUser } from "../../utils/types.js";
+import { NewUser, ExistingUser, UserWithPassword } from "../../utils/types.js";
 import pool from "../client.js"
 
-export const findExistingUserByEmail = async (email: string): Promise<boolean> => {
+export const isExistingUserByEmail = async (email: string): Promise<boolean> => {
     try {
         const { rowCount } = await pool.query(
             `SELECT 1 FROM auth_users WHERE email=$1`,
@@ -11,6 +11,21 @@ export const findExistingUserByEmail = async (email: string): Promise<boolean> =
         );
 
         return rowCount ? rowCount > 0 : false;
+    }
+    catch(error) {
+        console.log(error);
+        throw new CustomError(500, "Failed to retrieve user from database.");
+    }
+}
+
+export const findUserByEmail = async (email: string): Promise<UserWithPassword | null> => {
+    try {
+        const { rows } = await pool.query(
+            `SELECT user_id, email, password, role FROM auth_users WHERE email=$1`,
+            [email]
+        );
+
+        return rows[0] ?? null;
     }
     catch(error) {
         console.log(error);
