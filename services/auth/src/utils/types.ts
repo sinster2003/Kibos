@@ -20,8 +20,13 @@ interface ExistingUser extends Omit<User, "userId" | "createdAt" | "password"> {
     created_at: Date;
 }
 
-interface UserWithPassword extends ExistingUser {
-    password: string;
+interface RetrievedRefreshToken {
+    id: string;
+    user_id: string;
+    token: string;
+    revoked_at: Date;
+    expires_at: Date;
+    created_at: Date;
 }
 
 export {
@@ -30,5 +35,5 @@ export {
     JwtPayload,
     RefreshToken,
     ExistingUser,
-    UserWithPassword
+    RetrievedRefreshToken
 }

@@ -1,6 +1,6 @@
 import { DatabaseError } from "pg";
 import CustomError from "../../utils/customError.js";
-import { NewUser, ExistingUser, UserWithPassword } from "../../utils/types.js";
+import { NewUser, ExistingUser } from "../../utils/types.js";
 import pool from "../client.js"
 
 export const isExistingUserByEmail = async (email: string): Promise<boolean> => {
@@ -18,7 +18,7 @@ export const isExistingUserByEmail = async (email: string): Promise<boolean> => 
     }
 }
 
-export const findUserByEmail = async (email: string): Promise<UserWithPassword | null> => {
+export const findUserByEmail = async (email: string): Promise<ExistingUser & { password: string } | null> => {
     try {
         const { rows } = await pool.query(
             `SELECT user_id, email, password, role FROM auth_users WHERE email=$1`,

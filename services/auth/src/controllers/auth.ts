@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 import { NODE_ENV } from "../config/index.js";
 import generateJwt from "../utils/generateJWT.js";
 import { randomBytes, createHash } from "crypto";
-import { storeRefreshToken } from "../db/queries/tokens.js";
+import { getRefreshToken, revokeRefreshToken, rotateRefreshToken, storeRefreshToken } from "../db/queries/tokens.js";
 
 const registerUser: ControllerType = async (req, res) => {
     const userDetails = req.body;
@@ -67,7 +67,6 @@ const registerUser: ControllerType = async (req, res) => {
         httpOnly: true,
         secure: NODE_ENV === "production",
         sameSite: "lax",
-        path: "/api/auth", // the refresh token must be sent only to auth service
         maxAge: 30 * 24 * 60 * 60 * 1000
     });
 
@@ -129,7 +128,6 @@ const loginUser: ControllerType = async (req, res) => {
         httpOnly: true,
         secure: NODE_ENV === "production",
         sameSite: "lax",
-        path: "/api/auth", // the refresh token must be sent only to auth service
         maxAge: 30 * 24 * 60 * 60 * 1000
     });
 
@@ -138,7 +136,91 @@ const loginUser: ControllerType = async (req, res) => {
     })
 }
 
+const refreshTokenController: ControllerType = async (req, res) => {
+    const { refresh_token } = req.cookies;
+
+    if (!refresh_token) {
+        throw new CustomError(401, "Refresh token missing. Please log in.");
+    }
+
+    // hash the refresh token received from cookie
+    const tokenHash = createHash("sha256").update(refresh_token).digest("hex");
+
+    const refreshTokenFromDb = await getRefreshToken(tokenHash);
+
+    // check if refresh token valid
+    if(!refreshTokenFromDb ||
+        refreshTokenFromDb.revoked_at != null || 
+        new Date(refreshTokenFromDb.expires_at).getTime() < Date.now()
+    ) {
+        throw new CustomError(400, "Token has expired. Please log in.");
+    }
+
+    // if refresh token valid then generate new access token
+    const accessToken = generateJwt({ sub: refreshTokenFromDb.user_id, role: refreshTokenFromDb.role });
+
+    // rotate refresh token
+    const rotatedRefreshToken = randomBytes(64).toString("hex");
+    
+    const rotatedRefreshTokenHash = createHash("sha256").update(rotatedRefreshToken).digest("hex");
+
+    const isTokenRotated = await rotateRefreshToken({
+        id: uuidv4(),
+        userId: refreshTokenFromDb.user_id,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        rotatedRefreshTokenHash
+    });
+
+    if(!isTokenRotated) {
+        throw new CustomError(500, "Failed to rotate refresh token in database.");
+    }
+
+    res.cookie("access_token", accessToken, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: NODE_ENV === "production",
+        maxAge: 15 * 60 * 1000
+    });
+
+    res.cookie("refresh_token", rotatedRefreshToken, {
+        httpOnly: true,
+        secure: NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 30 * 24 * 60 * 60 * 1000
+    });
+
+    res.status(200).json({
+        message: "Access token refreshed successfully."
+    });
+}
+
+const logoutController: ControllerType = async (req, res) => {
+    const { refresh_token } = req.cookies;
+
+    // if refresh token is not revoked, revoke it and then clear cookies else simply clear cookies
+    if (refresh_token) {
+        const tokenHash = createHash("sha256").update(refresh_token).digest("hex");
+
+        const isTokenRevoked = await revokeRefreshToken(tokenHash);
+
+        if(!isTokenRevoked) {
+            throw new CustomError(500, "Failed to log out.")
+        }
+    }
+
+    res.clearCookie("access_token");
+
+    res.clearCookie("refresh_token");
+
+    res.status(200).json({
+        message: "Logged out successfully."
+    });
+}
+
 export default {
     registerUser: catchAsync(registerUser),
-    loginUser: catchAsync(loginUser)
+    loginUser: catchAsync(loginUser),
+    refreshTokenController: catchAsync(refreshTokenController),
+    logoutController: catchAsync(logoutController)
 }
