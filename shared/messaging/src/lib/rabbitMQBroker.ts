@@ -4,7 +4,7 @@ import { RABBITMQ_URL } from "../config/index.js";
 
 /* task queue implementation where the event is published in the queue and consumed */
 
-export class RabbitMQBroker extends MessageBrokerStrategy<Buffer> {
+export class RabbitMQBroker extends MessageBrokerStrategy<string> {
     private conn: ChannelModel | null = null;
     private channel: Channel | null = null;
 
@@ -21,12 +21,12 @@ export class RabbitMQBroker extends MessageBrokerStrategy<Buffer> {
         }
     }
 
-    async publish(destination: string, message: Buffer) {
+    async publish(destination: string, message: string) {
         if(!this.channel) throw new Error("Failed to create message channel.");
 
         try {
             await this.channel.assertQueue(destination, { durable: true });
-            this.channel.sendToQueue(destination, message, { persistent: true });
+            this.channel.sendToQueue(destination, Buffer.from(message), { persistent: true });
         }
         catch(error) {
             console.error("Failed to publish message into queue");
