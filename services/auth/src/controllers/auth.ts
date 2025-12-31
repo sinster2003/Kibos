@@ -2,14 +2,16 @@ import { prettifyError } from "zod";
 import catchAsync from "../utils/catchAsync.js";
 import CustomError from "../utils/customError.js";
 import { ControllerType } from "../utils/types.js";
-import { loginUserSchema, registerUserSchema } from "./auth.schema.js";
-import { createUser, findUserByEmail, isExistingUserByEmail } from "../db/queries/users.js";
+import { forgotPasswordSchema, loginUserSchema, registerUserSchema, resetPasswordSchema } from "./auth.schema.js";
+import { createUser, findUserByEmail, isExistingUserByEmail, updatePasswordByEmail } from "../db/queries/users.js";
+import messageBroker from "@kibos/messaging";
 import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
 import { NODE_ENV } from "../config/index.js";
-import generateJwt from "../utils/generateJWT.js";
+import generateJwt from "../utils/generateJwt.js";
 import { randomBytes, createHash } from "crypto";
 import { getRefreshToken, revokeRefreshToken, rotateRefreshToken, storeRefreshToken } from "../db/queries/tokens.js";
+import { redisClient } from "../utils/connectRedis.js";
 
 const registerUser: ControllerType = async (req, res) => {
     const userDetails = req.body;
@@ -218,9 +220,102 @@ const logoutController: ControllerType = async (req, res) => {
     });
 }
 
+const forgotPasswordController: ControllerType = async (req, res) => {
+    const forgotPasswordDetails = req.body;
+
+    const { success, error, data } = forgotPasswordSchema.safeParse(forgotPasswordDetails);
+
+    if(!success) {
+        throw new CustomError(400, prettifyError(error));
+    }
+
+    const { email } = data;
+
+    const isUserExisting = await isExistingUserByEmail(email);
+
+    if(!isUserExisting) {
+        throw new CustomError(400, "Failed to send email. Ensure the email is registered.");
+    }
+
+    // note: in future users with oauth should not be able to access this controller - no password for them
+
+    const resetToken = crypto.randomUUID();
+
+    // set in redis for TTL of 15 minutes
+    await redisClient.set(`reset:${resetToken}`, email, {
+        expiration: {
+            type: "EX",
+            value: 15 * 60 // seconds - 15 min
+        }
+    });
+
+    const message = {
+        eventType: "PASSWORD_RESET",
+        eventId: crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
+        payload: {
+            email,
+            resetToken,
+            expiresIn: new Date(Date.now() + 15 * 60 * 1000)
+        }
+    };
+
+    // async call to send the message with email and reset token
+    messageBroker?.publish("auth.password_reset_requested", JSON.stringify(message));
+
+    res.status(200).json({
+        message: "Reset password email sent successfully."
+    });
+}
+
+const resetPasswordController: ControllerType = async (req, res) => {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    const { success, error } = resetPasswordSchema.safeParse({ token, password });
+
+    if(!success) {
+        throw new CustomError(400, prettifyError(error));
+    }
+
+    // check if token valid
+    const email = await redisClient.get(`reset:${token}`);
+
+    if(!email) {
+        throw new CustomError(400, "Invalid or expired reset link.");
+    }
+
+    // is email valid and present in the database
+    const isEmailPresent = await isExistingUserByEmail(email);
+
+    if(!isEmailPresent) {
+        throw new CustomError(400, "User not found in the database. Please register.");
+    }
+
+    // update password
+    const saltRounds = await bcrypt.genSalt(10);
+
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    const isPasswordUpdated = await updatePasswordByEmail(email, hashedPassword);
+
+    if(!isPasswordUpdated) {
+        throw new CustomError(500, "Failed to update user password.");
+    }
+
+    // delete the token as it should not be reused again
+    await redisClient.del(`reset:${token}`);
+
+    res.status(200).json({
+        message: "Password updated successfully. Please login."
+    });
+}
+
 export default {
     registerUser: catchAsync(registerUser),
     loginUser: catchAsync(loginUser),
     refreshTokenController: catchAsync(refreshTokenController),
-    logoutController: catchAsync(logoutController)
+    logoutController: catchAsync(logoutController),
+    forgotPasswordController: catchAsync(forgotPasswordController),
+    resetPasswordController: catchAsync(resetPasswordController)
 }

@@ -6,10 +6,12 @@ const PORT = process.env.PORT;
 const DATABASE_URL = process.env.DATABASE_URL;
 const JWT_PRIVATE_KEY = process.env.JWT_PRIVATE_KEY;
 const NODE_ENV = process.env.NODE_ENV;
+const REDIS_URL = process.env.REDIS_URL;
 
 export {
     PORT,
     DATABASE_URL,
     JWT_PRIVATE_KEY,
-    NODE_ENV
+    NODE_ENV,
+    REDIS_URL
 };

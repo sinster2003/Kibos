@@ -62,3 +62,17 @@ export const createUser = async ({ userId, name, email, password, role }: NewUse
         throw new CustomError(500, "Failed to create user in database.");
     }
 }
+
+export const updatePasswordByEmail = async (email: string, hashedPassword: string): Promise<boolean> => {
+    try {
+        const { rowCount } = await pool.query(`
+            UPDATE auth_users SET password = $1 WHERE email = $2
+        `, [hashedPassword, email]);
+
+        return rowCount ? rowCount > 0 : false;
+    }
+    catch(error) {
+        console.log(error);
+        throw new CustomError(500, "Failed to update password in database."); 
+    }
+}

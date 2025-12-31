@@ -13,3 +13,12 @@ export const loginUserSchema = zod.object({
     email: zod.email(),
     password: zod.string().min(6, "Password must be at least 6 characters long")
 }).required();
+
+export const forgotPasswordSchema = zod.object({
+    email: zod.email(),
+}).required();
+
+export const resetPasswordSchema = zod.object({
+    token: zod.uuidv4(),
+    password: zod.string().min(6, "Password must be at least 6 characters long")
+}).required();
