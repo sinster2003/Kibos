@@ -1,6 +1,8 @@
 import dotenv from "dotenv";
 
-dotenv.config();
+dotenv.config({
+    path: new URL("../../.env", import.meta.url).pathname
+});
 
 const MESSAGE_BROKER_PROVIDER = process.env.MESSAGE_BROKER_PROVIDER;
 const RABBITMQ_URL = process.env.RABBITMQ_URL;

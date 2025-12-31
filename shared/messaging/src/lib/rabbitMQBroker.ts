@@ -16,6 +16,7 @@ export class RabbitMQBroker extends MessageBrokerStrategy<string> {
             this.channel = await this.conn?.createChannel();
         }
         catch(error) {
+            console.log(error);
             console.error("Failed to connect message broker.");
             process.exit(1);
         }
@@ -29,6 +30,7 @@ export class RabbitMQBroker extends MessageBrokerStrategy<string> {
             this.channel.sendToQueue(destination, Buffer.from(message), { persistent: true });
         }
         catch(error) {
+            console.log(error);
             console.error("Failed to publish message into queue");
         }
     }
@@ -48,7 +50,10 @@ export class RabbitMQBroker extends MessageBrokerStrategy<string> {
                     this.channel?.ack(message);
                 }
                 catch(error) {
-                    console.error("Failed to consume the message.");
+                    // wip: retry currently is false - risk of losing messages when user is created.
+                    // retry must be limited to certain attempts with base delay
+                    console.log(error);
+                    console.error("Failed to consume the message and process it.");
                     this.channel?.nack(message, false, false);
                 }
             });
