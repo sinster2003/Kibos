@@ -72,6 +72,21 @@ const registerUser: ControllerType = async (req, res) => {
         maxAge: 30 * 24 * 60 * 60 * 1000
     });
 
+    // user created event publish
+    const message = {
+        eventType: "USER_CREATED",
+        eventId: crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
+        payload: {
+            userId: registeredUser.user_id,
+            email: registeredUser.email,
+            role: registeredUser.role
+        }
+    }
+    
+    // async publish of user created event
+    messageBroker?.publish("auth.user_created", JSON.stringify(message));
+
     res.status(200).json({
         message: "Your account has been created successfully.",
     });
