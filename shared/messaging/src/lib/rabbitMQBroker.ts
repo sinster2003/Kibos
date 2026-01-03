@@ -40,11 +40,11 @@ export class RabbitMQBroker extends MessageBrokerStrategy<string> {
         }
     }
 
-    async consume(destination: string, handler: (msg: any) => Promise<void>) {
+    async consume(destination: string, handler: (msg: any) => Promise<void>, retryEnabled: boolean = false) {
         if(!this.channel) throw new Error("Failed to create message channel.");
         
         try {
-            await this.setUpFailureMechanism(destination);
+            retryEnabled && await this.setUpFailureMechanism(destination);
 
             // delivering one unacked message at a time to the consumer
             await this.channel.prefetch(1);
@@ -52,10 +52,10 @@ export class RabbitMQBroker extends MessageBrokerStrategy<string> {
             await this.channel.assertQueue(destination,
                 {
                     durable: true,
-                    arguments: {
+                    arguments: retryEnabled ? {
                         "x-dead-letter-exchange": `${destination}.dead_letter_exchange`,
                         "x-dead-letter-routing-key": "retry"
-                    }
+                    } : {}
                 }
             );
             
@@ -68,11 +68,16 @@ export class RabbitMQBroker extends MessageBrokerStrategy<string> {
                     this.channel?.ack(message);
                 }
                 catch(error) {
-                    // retry currently is false - risk of losing messages when user is created.
+                    if(!retryEnabled) {
+                        this.channel?.ack(message); // intentional for no retries needed events
+                        return;
+                    }
+
+                    // risk of losing messages when user_created event or retry needed events - so retries are must
                     // retry must be limited to certain attempts with base delay
 
-                    const xDeaths = message.properties.headers?.["x-death"];
-                    const rejectsCount = xDeaths?.find(d => d.queue === destination)?.count || 0;
+                    const xDeaths = message.properties.headers?.["x-death"] || [];
+                    const rejectsCount = xDeaths?.find(d => d.queue === destination && d.reason === "rejected")?.count || 0;
 
                     if(rejectsCount >= this.MAX_RETRIES) {
                         // send it to dead letter queue
@@ -96,6 +101,7 @@ export class RabbitMQBroker extends MessageBrokerStrategy<string> {
             });
         }
         catch(error) {
+            console.log(error);
             console.error("Failed to process the consumption of the message.");
         }
     }
