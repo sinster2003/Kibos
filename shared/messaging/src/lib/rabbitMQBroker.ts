@@ -72,7 +72,7 @@ export class RabbitMQBroker extends MessageBrokerStrategy<string> {
                     // retry must be limited to certain attempts with base delay
 
                     const xDeaths = message.properties.headers?.["x-death"];
-                    const rejectsCount = xDeaths?.find(d => d.queue === destination && d.reason === "rejected")?.count || 0;
+                    const rejectsCount = xDeaths?.find(d => d.queue === destination)?.count || 0;
 
                     if(rejectsCount >= this.MAX_RETRIES) {
                         // send it to dead letter queue
