@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "module": "nodenext",
+    "target": "es2022",
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true,
+    
+    // used to work with older libraries which use commonjs exports in an easier way
+    "esModuleInterop": true
+  },
+  "include": ["src/**/*"]
+}
