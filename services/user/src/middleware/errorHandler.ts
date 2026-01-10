@@ -9,8 +9,14 @@ const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
     }
 
     if(error.name === "JsonWebTokenError") {
-        return res.status(400).json({
-            message: "Invalid access token"
+        return res.status(401).json({
+            message: "Invalid access token. Please login again."
+        });
+    }
+
+    if (error.name === "TokenExpiredError") {
+        return res.status(401).json({
+            message: "Access token expired. Please login again."
         });
     }
 

@@ -30,9 +30,15 @@ interface JwtPayload {
     iss: string
 }
 
+interface AuthenticatedUser {
+    userId: string;
+    role: string;
+}
+
 export {
     ControllerType,
     UserCreatedPayload,
     UserCreatedEvent,
-    JwtPayload
+    JwtPayload,
+    AuthenticatedUser
 }

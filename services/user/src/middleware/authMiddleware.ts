@@ -1,32 +1,30 @@
 import { NextFunction, Request, Response } from "express";
 import catchAsync from "../utils/catchAsync.js";
 import CustomError from "../utils/customError.js";
-import verifyJwt from "../utils/verifyJwt.js";
+import verifyJwt, { extractAccessToken } from "../utils/verifyJwt.js";
+import { AuthenticatedUser } from "../utils/types.js";
 
 declare global {
     namespace Express {
         interface Request {
-            user: string;
-            role: string;
+            user?: AuthenticatedUser
         }
     }
 }
 
 const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-    const { access_token } = req.cookies;
+    const accessToken = extractAccessToken(req);
 
-    if (!access_token) {
+    if (!accessToken) {
         throw new CustomError(401, "User unauthenticated. Please login.");
     }
 
-    const jwtPayload = verifyJwt(access_token);
+    const jwtPayload = verifyJwt(accessToken);
 
-    if (!jwtPayload) {
-        throw new CustomError(400, "Access token invalid. Please login.");
+    req.user = {
+        userId: jwtPayload.sub,
+        role: jwtPayload.role
     }
-
-    req.user = jwtPayload.sub;
-    req.role = jwtPayload.role;
 
     next();
 }
