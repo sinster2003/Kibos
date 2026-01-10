@@ -8,6 +8,12 @@ const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
         });
     }
 
+    if(error.name === "JsonWebTokenError") {
+        return res.status(400).json({
+            message: "Invalid access token"
+        });
+    }
+
     if(error instanceof CustomError) {
         return res.status(error.statusCode).json({
             message: error.message

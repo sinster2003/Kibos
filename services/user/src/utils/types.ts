@@ -21,8 +21,18 @@ interface UserCreatedEvent {
     payload: UserCreatedPayload;
 }
 
+interface JwtPayload {
+    sub: string,
+    role: userRole.jobseeker | userRole.recruiter,
+    iat: number,
+    exp: number,
+    aud: string,
+    iss: string
+}
+
 export {
     ControllerType,
     UserCreatedPayload,
-    UserCreatedEvent
+    UserCreatedEvent,
+    JwtPayload
 }
