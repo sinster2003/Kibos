@@ -79,6 +79,7 @@ const registerUser: ControllerType = async (req, res) => {
         timestamp: new Date().toISOString(),
         payload: {
             userId: registeredUser.user_id,
+            name: registeredUser.name,
             email: registeredUser.email,
             role: registeredUser.role
         }
