@@ -7,16 +7,16 @@ const startUserConsumer = async () => {
     try {
         const userHandler = async (message: UserCreatedEvent) => {
             if(!message) {
-                throw new CustomError(500, "Failed to retrieve the payload in the consumer user service.");
+                throw new CustomError(400, "Failed to retrieve the payload in the consumer user service.");
             }
 
             const { payload } = message;
 
             if(!payload || !payload.userId || !payload.email || !payload.name || !payload.role) {
-                throw new CustomError(500, "Invalid message received from the producer auth service.");
+                throw new CustomError(400, "Invalid message received from the producer auth service.");
             }
 
-            const isUserPersisted = await persistUserInDatabase(payload);
+            const isUserPersisted = await persistUserInDatabase(payload); // persist user in usersdb
 
             if(!isUserPersisted) {
                 throw new CustomError(500, "Failed to create user in the users service database");

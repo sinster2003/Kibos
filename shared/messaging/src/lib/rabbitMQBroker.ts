@@ -67,8 +67,11 @@ export class RabbitMQBroker extends MessageBrokerStrategy<string> {
                     await handler(payload);
                     this.channel?.ack(message);
                 }
-                catch(error) {
-                    if(!retryEnabled) {
+                catch(error: any) {
+                    console.log(error);
+                    
+                    // if retry is disabled or invalid payload from producer or already exists in db - do not retry the messages again                  
+                    if(!retryEnabled || (error?.statusCode === 400 || error?.statusCode === 409)) {
                         this.channel?.ack(message); // intentional for no retries needed events
                         return;
                     }
@@ -88,8 +91,6 @@ export class RabbitMQBroker extends MessageBrokerStrategy<string> {
                         this.channel?.ack(message);
                         return;
                     }
-
-                    console.log(error);
 
                     console.error(
                         `Message sent to DLX after ${rejectsCount} retries`,

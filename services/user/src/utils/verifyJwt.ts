@@ -11,7 +11,7 @@ export const extractAccessToken = (req: Request) => {
         return authHeader.split(" ")[1];
     }
 
-    return req.cookies.access_token ?? null;
+    return req.cookies?.access_token ?? null;
 }
 
 const verifyJwt = (accessToken: string) => {

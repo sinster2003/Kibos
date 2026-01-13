@@ -13,7 +13,7 @@ export const persistUserInDatabase = async (payload: UserCreatedPayload): Promis
             ON CONFLICT DO NOTHING
         `, [userId, name, email, role]);
         
-        return rowCount === 1;
+        return rowCount === 1 || rowCount === 0; // when rowCount is 0 it means conflict occurred and user exists - idempotent
     }
     catch(error) {
         console.log(error);
