@@ -1,7 +1,22 @@
 import { DatabaseError } from "pg";
 import CustomError from "../../utils/customError.js";
 import pool from "../client.js";
-import { UserCreatedPayload } from "../../utils/types.js";
+import { RetrievedUserFromDatabase, UserCreatedPayload } from "../../utils/types.js";
+
+export const fetchUserById = async (userId: string): Promise<RetrievedUserFromDatabase | null> => {
+    try {
+        const { rows } = await pool.query(`
+            SELECT * FROM users
+            WHERE user_id = $1
+        `, [userId]);
+
+        return rows[0] ?? null;
+    }
+    catch(error) {
+        console.log(error);
+        throw new CustomError(500, "Failed to retrieve user from database");
+    }
+}
 
 export const persistUserInDatabase = async (payload: UserCreatedPayload): Promise<Boolean> => {
     try {

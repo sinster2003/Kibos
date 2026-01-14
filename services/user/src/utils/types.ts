@@ -1,4 +1,7 @@
 import { NextFunction, Request, Response } from "express";
+import { InferSelectModel } from "drizzle-orm";
+import { usersTable } from "../db/schema.js";
+import { string } from "zod";
 
 type ControllerType = (req: Request, res: Response, next: NextFunction) => Promise<any>;
 
@@ -35,10 +38,29 @@ interface AuthenticatedUser {
     role: string;
 }
 
+type RetrievedUser = InferSelectModel<typeof usersTable>
+
+interface RetrievedUserFromDatabase extends Omit<RetrievedUser, "userId" | "phoneNo" | "resumeId" | "profilePic" | "profilePicId"> {
+    user_id: string;
+    phone_no: string;
+    resume_id: string;
+    profile_pic: string;
+    profile_pic_id: string;
+}
+
+interface UserSkillPayload {
+    userId: string,
+    skill: string,
+    skillId: string
+}
+
 export {
     ControllerType,
     UserCreatedPayload,
     UserCreatedEvent,
     JwtPayload,
-    AuthenticatedUser
+    AuthenticatedUser,
+    RetrievedUser,
+    RetrievedUserFromDatabase,
+    UserSkillPayload
 }
