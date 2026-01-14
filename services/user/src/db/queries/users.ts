@@ -18,6 +18,19 @@ export const fetchUserById = async (userId: string): Promise<RetrievedUserFromDa
     }
 }
 
+export const updateUserByUserId = async (userId: string, query: string, dataToUpdate: string[]) => {
+    try {
+        await pool.query(`
+            UPDATE users
+            SET ${query}
+            WHERE user_id = $1
+        `, [userId, ...dataToUpdate]);
+    }
+    catch(error) {
+        console.log(error);
+    }
+}
+
 export const persistUserInDatabase = async (payload: UserCreatedPayload): Promise<Boolean> => {
     try {
         const { userId, name, email, role } = payload;

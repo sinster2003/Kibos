@@ -16,6 +16,7 @@ userRouter.use("/profile/me", authMiddleware, profileRouter);
 userRouter.use("/skills", authMiddleware, isJobSeekerMiddleware, skillsRouter);
 
 // recruiter accessed routes
+// current implementation user profiles can be viewed only by recruiters
 userRouter.get("/users/:userId", authMiddleware, isRecruiterMiddleware, getUserById);
 
 export default userRouter;
