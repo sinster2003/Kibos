@@ -8,9 +8,14 @@ export abstract class UploadServiceStrategy {
 }
 
 export class CloudinaryUploader extends UploadServiceStrategy {
-    async upload({ file, previousAssetId }: UploadPayload): Promise<UploadResult> {
+    async upload({ file, previousAssetId }: UploadPayload): Promise<UploadResult> {        
+        // convert file to base64 encoded string if passed as buffer
+        const fileUri = typeof file === "string" ? file : Buffer.from(file).toString("base64");
+
         // upload the asset
-        const { secure_url, public_id } = await cloudinary.uploader.upload(file as string);
+        const { secure_url, public_id } = await cloudinary.uploader.upload(fileUri, {
+            folder: "kibos"
+        });
         
         // if an older asset is present in cloudinary delete the older asset
         if(previousAssetId) {

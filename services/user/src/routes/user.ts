@@ -10,7 +10,7 @@ const userRouter = Router();
 
 const { getUserById } = userControllers;
 
-userRouter.use("/profile/me", authMiddleware, profileRouter);
+userRouter.use("/profile", authMiddleware, profileRouter);
 
 // jobseeker accessed routes
 userRouter.use("/skills", authMiddleware, isJobSeekerMiddleware, skillsRouter);
