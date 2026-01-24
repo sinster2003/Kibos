@@ -5,7 +5,6 @@ export const roleEnum = pgEnum("user_role", ["jobseeker", "recruiter"]);
 // auth_users table
 export const authUsers = pgTable("auth_users", {
     userId: uuid("user_id").primaryKey(),
-    name: varchar({ length: 255 }),
     email: varchar({ length: 255 }).notNull().unique(),
     password: varchar({ length: 255 }),
     role: roleEnum().notNull(),

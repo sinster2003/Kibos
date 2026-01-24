@@ -33,13 +33,13 @@ export const findUserByEmail = async (email: string): Promise<ExistingUser & { p
     }
 }
 
-export const createUser = async ({ userId, name, email, password, role }: NewUser): Promise<ExistingUser | null> => {
+export const createUser = async ({ userId, email, password, role }: NewUser): Promise<ExistingUser | null> => {
     try {
         const { rows } = await pool.query(
-            `INSERT INTO auth_users (user_id, name, email, password, role) 
-            VALUES ($1, $2, $3, $4, $5) RETURNING
-            user_id, name, email, role, created_at`,
-            [userId, name, email, password, role]
+            `INSERT INTO auth_users (user_id, email, password, role) 
+            VALUES ($1, $2, $3, $4) RETURNING
+            user_id, email, role, created_at`,
+            [userId, email, password, role]
         );
         
         return rows[0] ?? null;

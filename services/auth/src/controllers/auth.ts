@@ -22,7 +22,7 @@ const registerUser: ControllerType = async (req, res) => {
         throw new CustomError(400, prettifyError(error));
     }
 
-    const { email, password } = data;
+    const { name, email, password } = data;
 
     const isUserExisting = await isExistingUserByEmail(email);
 
@@ -79,7 +79,7 @@ const registerUser: ControllerType = async (req, res) => {
         timestamp: new Date().toISOString(),
         payload: {
             userId: registeredUser.user_id,
-            name: registeredUser.name,
+            name,
             email: registeredUser.email,
             role: registeredUser.role
         }
