@@ -6,7 +6,19 @@ import getUploadService from "../lib/uploadServiceFactory.js";
 import { ControllerType } from "../types.js";
 
 const uploadController: ControllerType = async (req: Request, res: Response) => {
-    const { file, previousAssetId } = req.body;
+    const file = req.file;
+
+    if(!file) {
+        throw new CustomError(404, "File not found.");
+    }
+
+    const previousAssetId = req.headers["x-previous-asset-id"] as string;
+
+    const fileMimetype = JSON.parse(req.headers["x-file-mimetype"] as string);
+
+    if(!fileMimetype.includes(file.mimetype)) {
+        throw new CustomError(400, "Invalid File Type.");
+    }
 
     const uploadServiceProvider = getUploadService(STORAGE ?? "");
 
@@ -14,7 +26,7 @@ const uploadController: ControllerType = async (req: Request, res: Response) => 
         throw new CustomError(500, "Invalid Storage Provider");
     }
 
-    const { url, assetId } = await uploadServiceProvider.upload({ file, previousAssetId });
+    const { url, assetId } = await uploadServiceProvider.upload({ file: file.buffer, previousAssetId });
 
     res.status(200).json({
         url,

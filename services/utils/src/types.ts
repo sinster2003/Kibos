@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 
 interface UploadPayload {
-    file: string | Buffer;
+    file: Buffer;
     previousAssetId?: string;
 }
 
