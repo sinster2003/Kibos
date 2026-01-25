@@ -1,4 +1,3 @@
-import axios from "axios";
 import { prettifyError } from "zod";
 import { addSkillToUser, deleteUserSkillMapping } from "../db/queries/skills.js";
 import { fetchAvatarIdByUserId, fetchResumeIdByUserId, fetchUserById, updateUserByUserId } from "../db/queries/users.js";
@@ -6,7 +5,7 @@ import catchAsync from "../utils/catchAsync.js";
 import CustomError from "../utils/customError.js";
 import { ControllerType } from "../utils/types.js";
 import { profileSchema, skillSchema } from "./user.schema.js";
-import { UPLOAD_SERVICE_BASE_URL } from "../config/index.js";
+import uploadProxy from "../utils/uploadProxy.js";
 
 const getMyProfile: ControllerType = async (req, res) => {
     const { userId } = req.user!;
@@ -50,7 +49,7 @@ const updateMyProfile: ControllerType = async (req, res) => {
         // camel case to snake case
         const sqlField = field[0].replace(/([A-Z])/g, (match) => `_${match.toLowerCase()}`);
 
-        return `${sqlField} = $${index + 2}`
+        return `${sqlField} = $${index + 2}`; // 1 based placeholder
     }).join(", ");
 
     const isUserUpdated = await updateUserByUserId(userId, dynamicQuery, dataToUpdate);
@@ -66,11 +65,6 @@ const updateMyProfile: ControllerType = async (req, res) => {
 
 const updateMyResume: ControllerType = async (req, res) => {
     const { userId } = req.user!;
-    const resume = req.file;
-
-    if(!resume) {
-        throw new CustomError(400, "Resume not provided. Resume is not updated.");
-    }
 
     const isResumeIdFetched = await fetchResumeIdByUserId(userId);
 
@@ -78,18 +72,10 @@ const updateMyResume: ControllerType = async (req, res) => {
         throw new CustomError(404, "Logged in user and resume id not present in the database.");
     }
 
+    const allowedMimeTypes = ["application/pdf"];
+
     // synchronous network call to upload asset in cloud storage service
-    const result = await axios.post(`${UPLOAD_SERVICE_BASE_URL}/api/utils/upload`, {
-        file: `data:${resume.mimetype};base64,${resume.buffer.toString("base64")}`,
-        previousAssetId: isResumeIdFetched.resume_id
-    });
-
-    // update in users table
-    const { url, assetId } = await result.data;
-
-    if(!url || !assetId) {
-        throw new CustomError(500, "Failed to upload the resume.");
-    }
+    const { url, assetId } = await uploadProxy(req, allowedMimeTypes, isResumeIdFetched.resume_id);
 
     const isResumeUpdated = await updateUserByUserId(userId, "resume = $2, resume_id = $3", [url, assetId]);
 
@@ -98,17 +84,13 @@ const updateMyResume: ControllerType = async (req, res) => {
     }
 
     res.status(200).json({
-        message: "Resume updated successfully."
-    })
+        message: "Resume updated successfully.",
+        url
+    });
 }
 
 const updateMyAvatar: ControllerType = async (req, res) => {
     const { userId } = req.user!;
-    const avatar = req.file;
-
-    if(!avatar) {
-        throw new CustomError(400, "Avatar not provided. Avatar is not updated.");
-    }
 
     const isAvatarIdFetched = await fetchAvatarIdByUserId(userId);
 
@@ -116,28 +98,21 @@ const updateMyAvatar: ControllerType = async (req, res) => {
         throw new CustomError(404, "Logged in user and avatar id not present in the database.");
     }
 
+    const allowedMimeTypes = ["image/png", "image/jpeg"];
+
     // synchronous network call to upload asset in cloud storage service
-    const result = await axios.post(`${UPLOAD_SERVICE_BASE_URL}/api/utils/upload`, {
-        file: `data:${avatar.mimetype};base64,${avatar.buffer.toString("base64")}`,
-        previousAssetId: isAvatarIdFetched.profile_pic_id
-    });
-
-    // update in users table
-    const { url, assetId } = await result.data;
-
-    if(!url || !assetId) {
-        throw new CustomError(500, "Failed to upload the avatar.");
-    }
+    const { url, assetId } = await uploadProxy(req, allowedMimeTypes, isAvatarIdFetched.profile_pic_id);
 
     const isAvatarUpdated = await updateUserByUserId(userId, "profile_pic = $2, profile_pic_id = $3", [url, assetId]);
-
+                
     if(!isAvatarUpdated) {
-        throw new CustomError(500, "Failed to update the avatar.");
+        throw new CustomError(500, "Failed to update avatar.");
     }
 
     res.status(200).json({
-        message: "Avatar updated successfully."
-    })
+        message: "Avatar updated successfully.",
+        url
+    });
 }
 
 const getUserById: ControllerType = async (req, res) => {

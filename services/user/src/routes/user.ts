@@ -3,7 +3,7 @@ import authMiddleware from "../middleware/authMiddleware.js";
 import isRecruiterMiddleware from "../middleware/isRecruiterMiddleware.js";
 import profileRouter from "./profile.js";
 import skillsRouter from "./skills.js";
-import isJobSeekerMiddleware from "../middleware/isJobSeekerMiddleware.js";
+import isJobSeekerMiddleware from "../middleware/isJobseekerMiddleware.js";
 import userControllers from "../controllers/user.js";
 
 const userRouter = Router();

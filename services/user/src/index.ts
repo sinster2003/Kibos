@@ -2,10 +2,14 @@ import messageBroker from "@kibos/messaging";
 import app from "./app.js";
 import { PORT } from "./config/index.js";
 import startUserConsumer from "./utils/consumer.js";
+import CustomError from "./utils/customError.js";
 
 const startUserService = async () => {
     try {
-        await messageBroker?.connect();
+        if(!messageBroker) { throw new CustomError(500, "Invalid message broker provider"); }
+
+        await messageBroker.connect(); // connect to the message broker - creates a channel
+
         await startUserConsumer(); // user service consumes the user creation events
 
         app.listen(PORT, () => {

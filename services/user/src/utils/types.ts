@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { InferSelectModel } from "drizzle-orm";
 import { usersTable } from "../db/schema.js";
-import { string } from "zod";
 
 type ControllerType = (req: Request, res: Response, next: NextFunction) => Promise<any>;
 
@@ -54,6 +53,11 @@ interface UserSkillPayload {
     skillId: string
 }
 
+interface UploadResult {
+    url: string,
+    assetId: string
+}
+
 export {
     ControllerType,
     UserCreatedPayload,
@@ -62,5 +66,6 @@ export {
     AuthenticatedUser,
     RetrievedUser,
     RetrievedUserFromDatabase,
-    UserSkillPayload
+    UserSkillPayload,
+    UploadResult
 }
